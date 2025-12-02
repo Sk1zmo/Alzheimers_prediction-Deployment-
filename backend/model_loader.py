@@ -1,8 +1,12 @@
+import os
 import torch
 from torchvision import transforms
 from PIL import Image
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "alzheimers_model.pth")
 
 preprocess = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -11,12 +15,14 @@ preprocess = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
-def load_model(model_path="alzheimers_model.pth"):
-    model = torch.load(model_path, map_location=DEVICE)
+def load_model():
+    print("Loading model from:", MODEL_PATH)  # debug
+    model = torch.load(MODEL_PATH, map_location=DEVICE)
     model.eval()
     return model.to(DEVICE)
 
 model = load_model()
+
 
 def predict_image(image: Image.Image):
     img_tensor = preprocess(image).unsqueeze(0).to(DEVICE)
