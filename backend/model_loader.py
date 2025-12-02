@@ -3,6 +3,8 @@ import torch
 from torchvision import transforms
 from PIL import Image
 
+from model_architecture import AlzheimerCNN   # Must match your training model
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -16,13 +18,22 @@ preprocess = transforms.Compose([
 ])
 
 def load_model():
-    print("Loading model from:", MODEL_PATH)  # debug
-    model = torch.load(MODEL_PATH, map_location=DEVICE)
+    print("Loading model from:", MODEL_PATH)
+
+    # Create empty model (architecture)
+    model = AlzheimerCNN(num_classes=4)
+
+    # Load weights (state_dict)
+    state_dict = torch.load(MODEL_PATH, map_location=DEVICE)
+
+    # Apply weights
+    model.load_state_dict(state_dict)
+
     model.eval()
     return model.to(DEVICE)
 
+# Load on startup
 model = load_model()
-
 
 def predict_image(image: Image.Image):
     img_tensor = preprocess(image).unsqueeze(0).to(DEVICE)
