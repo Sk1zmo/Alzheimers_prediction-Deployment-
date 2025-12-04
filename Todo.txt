@@ -1,0 +1,2 @@
+Add differentiater between ct scans and non ct scans
+Add MSME and F1 scores
