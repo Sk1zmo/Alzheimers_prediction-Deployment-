@@ -21,25 +21,11 @@ class AlzheimerCNN(nn.Module):
         self.fc2 = nn.Linear(256, num_classes)
 
     def forward(self, x):
-        # Conv block 1
         x = self.pool(torch.relu(self.bn1(self.conv1(x))))
-
-        # Conv block 2
         x = self.pool(torch.relu(self.bn2(self.conv2(x))))
-
-        # Conv block 3
         x = self.pool(torch.relu(self.bn3(self.conv3(x))))
-
-        # Adaptive pool to fixed size
         x = self.avgpool(x)
-
-        # Flatten
         x = torch.flatten(x, 1)
-
-        # Fully connected
         x = self.dropout(torch.relu(self.fc1(x)))
-
-        # Output classes
         x = self.fc2(x)
-
         return x
