@@ -4,7 +4,6 @@ import numpy as np
 import cv2
 from PIL import Image
 from torchvision import transforms
-from sklearn.metrics import roc_curve, auc
 
 from model_architecture import AlzheimerCNN
 
@@ -152,3 +151,4 @@ def explain_image(image: Image.Image):
     heatmap = generate_gradcam(model, img_tensor)
     ok, buffer = cv2.imencode(".png", heatmap)
     return buffer.tobytes()
+
