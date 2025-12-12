@@ -4,7 +4,7 @@ from fastapi.responses import StreamingResponse
 from io import BytesIO
 from PIL import Image
 
-from model_loader import predict_image, explain_image
+from backend.model_loader import predict_image, explain_image
 
 app = FastAPI()
 
@@ -60,6 +60,7 @@ async def explain(file: UploadFile = File(...)):
         BytesIO(heatmap_bytes),
         media_type="image/png"
     )
+
 
 
 
