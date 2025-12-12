@@ -10,8 +10,8 @@ import torch.nn.functional as F
 from model_architecture import AlzheimerCNN
 
 # Storage + Database
-from storage import upload_image_to_supabase
-from database import save_prediction
+from backend.storage import upload_image_to_supabase
+from backend.database import save_prediction
 
 
 # ============================================
@@ -199,3 +199,4 @@ def explain_image(image: Image.Image):
 
     success, buffer = cv2.imencode(".png", heatmap)
     return buffer.tobytes()
+
