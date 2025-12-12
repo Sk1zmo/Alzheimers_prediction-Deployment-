@@ -1,4 +1,4 @@
-.import os
+import os
 import torch
 import numpy as np
 import cv2
@@ -199,5 +199,6 @@ def explain_image(image: Image.Image):
 
     success, buffer = cv2.imencode(".png", heatmap)
     return buffer.tobytes()
+
 
 
