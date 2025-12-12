@@ -5,6 +5,23 @@ from io import BytesIO
 from PIL import Image
 
 from model_loader import predict_image, explain_image
+import threading
+import time
+import requests
+
+RENDER_URL = "https://alzheimers-prediction-deployment.netlify.app/"
+
+def keep_alive():
+    while True:
+        try:
+            requests.get(RENDER_URL, timeout=10)
+        except Exception:
+            pass
+        time.sleep(300)  # 5 minutes = 300 seconds
+
+# Start background keep-alive thread
+threading.Thread(target=keep_alive, daemon=True).start()
+
 
 app = FastAPI()
 
@@ -45,3 +62,4 @@ async def explain(file: UploadFile = File(...)):
         BytesIO(heatmap_bytes),
         media_type="image/png"
     )
+
