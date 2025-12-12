@@ -1,8 +1,8 @@
 import os
 from supabase import create_client, Client
 
-SUPABASE_URL = os.getenv("https://jrtsokyqspygwtflcaqa.supabase.co")
-SUPABASE_KEY = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpydHNva3lxc3B5Z3d0ZmxjYXFhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTU1MTEwMCwiZXhwIjoyMDgxMTI3MTAwfQ.Dh5VhUqxsJiqMzQC9Xnos1rqVI566BJ-iKSNfG9of34")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
