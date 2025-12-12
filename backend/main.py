@@ -5,6 +5,9 @@ from io import BytesIO
 from PIL import Image
 
 from model_loader import predict_image, explain_image
+
+app = FastAPI()
+
 import threading
 import time
 import requests
@@ -21,10 +24,6 @@ def keep_alive():
 
 # Start background keep-alive thread
 threading.Thread(target=keep_alive, daemon=True).start()
-
-
-app = FastAPI()
-
 # 🔥 FIXED — allow Netlify + Render frontend
 app.add_middleware(
     CORSMiddleware,
@@ -62,4 +61,5 @@ async def explain(file: UploadFile = File(...)):
         BytesIO(heatmap_bytes),
         media_type="image/png"
     )
+
 
