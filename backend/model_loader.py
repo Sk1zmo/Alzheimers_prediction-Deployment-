@@ -1,4 +1,4 @@
-import os
+.import os
 import torch
 import numpy as np
 import cv2
@@ -7,7 +7,7 @@ from torchvision import transforms
 import torch.nn.functional as F
 
 # Import model architecture
-from model_architecture import AlzheimerCNN
+from backend.model_architecture import AlzheimerCNN
 
 # Storage + Database
 from backend.storage import upload_image_to_supabase
@@ -199,4 +199,5 @@ def explain_image(image: Image.Image):
 
     success, buffer = cv2.imencode(".png", heatmap)
     return buffer.tobytes()
+
 
