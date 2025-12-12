@@ -9,6 +9,11 @@ import torch.nn.functional as F
 # Import model architecture
 from model_architecture import AlzheimerCNN
 
+# Storage + Database
+from storage import upload_image_to_supabase
+from database import save_prediction
+
+
 # ============================================
 # DEVICE + MODEL PATH
 # ============================================
@@ -16,6 +21,10 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "alzheimers_model.pth")
+
+# Classes (adjust if needed)
+CLASS_NAMES = ["Class0", "Class1", "Class2", "Class3"]
+
 
 # ============================================
 # PREPROCESSING PIPELINE
@@ -49,10 +58,6 @@ model = load_model()
 # (1) CT SCAN DETECTOR — SIMPLE HEURISTIC
 # ============================================
 def is_ct_scan(image: Image.Image):
-    """
-    Quick rule-based CT scan detector.
-    Checks grayscale contrast + average brightness.
-    """
     arr = np.array(image.convert("L"))
     std = arr.std()
     mean = arr.mean()
@@ -80,7 +85,7 @@ def generate_gradcam(model, image_tensor):
     def backward_hook(module, grad_in, grad_out):
         gradients.append(grad_out[0])
 
-    # Hook the last convolution layer
+    # Hook last conv layer
     target_layer = model.conv3
     target_layer.register_forward_hook(forward_hook)
     target_layer.register_backward_hook(backward_hook)
@@ -99,7 +104,6 @@ def generate_gradcam(model, image_tensor):
 
     cam = np.maximum(cam, 0)
     cam = cam / (cam.max() + 1e-9)
-
     cam = cv2.resize(cam, (224, 224))
     heatmap = (cam * 255).astype(np.uint8)
 
@@ -113,18 +117,9 @@ def generate_gradcam(model, image_tensor):
 # Optional ROC Curve Calculation
 # ============================================
 def compute_simple_roc(probabilities, predicted_class):
-    """
-    Since ROC normally requires dataset of many samples,
-    we compute a simple 1-sample ROC representation so frontend
-    can still render a graph.
-    """
-
     p = float(probabilities[predicted_class])
-
-    # Fake thresholds
     thresholds = np.linspace(0, 1, 20)
 
-    # FPR/TPR simulation
     fpr = [float(abs(t - p)) for t in thresholds]
     tpr = [float(max(0, 1 - abs(t - p))) for t in thresholds]
 
@@ -132,9 +127,13 @@ def compute_simple_roc(probabilities, predicted_class):
 
 
 # ============================================
-# (3) MAIN PREDICTION FUNCTION
+# (3) MAIN PREDICTION FUNCTION (SUPABASE + DB)
 # ============================================
-def predict_image(image: Image.Image):
+def predict_image(image: Image.Image, filename: str, image_bytes: bytes):
+
+    # -------------------------------
+    # Preprocessing
+    # -------------------------------
     img_tensor = preprocess(image).unsqueeze(0).to(DEVICE)
 
     with torch.no_grad():
@@ -144,28 +143,45 @@ def predict_image(image: Image.Image):
     predicted_class = int(np.argmax(probabilities))
     confidence_value = float(probabilities[predicted_class])
 
-    # F1 estimate for a single sample
+    # -------------------------------
+    # Extra Metrics (same as before)
+    # -------------------------------
     f1_est = (2 * confidence_value * confidence_value) / (
         confidence_value + confidence_value + 1e-9
     )
 
-    # MSE (prob distribution vs one-hot)
     one_hot = np.zeros(len(probabilities))
     one_hot[predicted_class] = 1
     mse = float(np.mean((probabilities - one_hot) ** 2))
 
-    # ROC curve (fake but consistent representation)
     fpr, tpr, thresholds = compute_simple_roc(probabilities, predicted_class)
 
+    # -------------------------------
+    # Upload to Supabase
+    # -------------------------------
+    image_url = upload_image_to_supabase(filename, image_bytes)
+
+    # -------------------------------
+    # Save metadata into SQLite DB
+    # -------------------------------
+    save_prediction(filename, image_url, CLASS_NAMES[predicted_class], confidence_value)
+
+    # -------------------------------
+    # Final response
+    # -------------------------------
     return {
         "class_id": predicted_class,
+        "class_name": CLASS_NAMES[predicted_class],
         "confidence": confidence_value,
         "probabilities": probabilities.tolist(),
+        "image_url": image_url,
         "is_ct_scan": is_ct_scan(image),
+
         "metrics": {
             "f1_estimate": float(f1_est),
             "mse": mse
         },
+
         "roc": {
             "fpr": fpr,
             "tpr": tpr,
@@ -175,7 +191,7 @@ def predict_image(image: Image.Image):
 
 
 # ============================================
-# (4) GRAD-CAM FOR /explain ENDPOINT
+# (4) GRAD-CAM ENDPOINT SUPPORT
 # ============================================
 def explain_image(image: Image.Image):
     img_tensor = preprocess(image).unsqueeze(0).to(DEVICE)
