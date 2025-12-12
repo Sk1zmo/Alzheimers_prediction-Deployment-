@@ -42,13 +42,12 @@ def home():
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    try:
-        img_bytes = await file.read()
-        image = Image.open(BytesIO(img_bytes)).convert("RGB")
-        result = predict_image(image)
-        return result
-    except Exception as e:
-        return {"error": str(e)}
+    contents = await file.read()
+    image = Image.open(BytesIO(contents)).convert("RGB")
+
+    result = predict_image(image, file.filename, contents)
+
+    return result
 
 @app.post("/explain")
 async def explain(file: UploadFile = File(...)):
@@ -61,5 +60,6 @@ async def explain(file: UploadFile = File(...)):
         BytesIO(heatmap_bytes),
         media_type="image/png"
     )
+
 
 
